@@ -87,6 +87,33 @@ class VideoFlowEngine:
             logger.warning("Video Flow web research skipped (%s)", exc.__class__.__name__)
             return []
 
+    def _apply_scene_images(
+        self,
+        production: dict[str, Any],
+        storyboard: dict[str, Any],
+        kwargs: dict[str, Any],
+        project_dir: Path,
+        report: Callable[..., Any],
+        *,
+        video_id: str,
+    ) -> dict[str, Any]:
+        """Optional Muse Image backgrounds; returns ``production`` on any miss."""
+        try:
+            from .muse_scene_images import apply_scene_images
+
+            updated, _manifest = apply_scene_images(
+                production,
+                storyboard,
+                kwargs,
+                project_dir,
+                report=report,
+                is_cancelled=lambda: self.process_manager.is_cancelled(video_id),
+            )
+            return updated
+        except Exception as exc:
+            logger.warning("Muse scene images skipped (%s)", exc.__class__.__name__)
+            return production
+
     def run(self, video_id: str, **kwargs: Any) -> dict[str, Any]:
         callback: Callable[[dict[str, Any]], None] = kwargs.get("progress_callback") or (lambda _: None)
         report_context: dict[str, Path | None] = {"log_path": None}
@@ -165,21 +192,47 @@ class VideoFlowEngine:
                 video_id=video_id,
                 visual_context=visual_context,
             )
+            # Optional Muse Image scene images (Meta Model API). Off by
+            # default; any miss keeps the production exactly as it was.
+            plain_production = production
+            production = self._apply_scene_images(production, storyboard, kwargs, project_dir, report, video_id=video_id)
             report(45, "Translating visual plan", "directing")
             try:
-                video_path = Path(
-                    renderer.render(
-                        production,
-                        project_dir,
-                        job_id=video_id,
-                        process_manager=self.process_manager,
-                        progress_callback=lambda event: report(
-                            float(event["progress"]),
-                            str(event["message"]),
-                            str(event["state"]),
-                        ),
+                try:
+                    video_path = Path(
+                        renderer.render(
+                            production,
+                            project_dir,
+                            job_id=video_id,
+                            process_manager=self.process_manager,
+                            progress_callback=lambda event: report(
+                                float(event["progress"]),
+                                str(event["message"]),
+                                str(event["state"]),
+                            ),
+                        )
                     )
-                )
+                except EngineError as image_exc:
+                    # A render with Muse scene images failed: retry once with
+                    # the standard scene visuals before any other fallback.
+                    if production is plain_production or self.process_manager.is_cancelled(video_id):
+                        raise
+                    logger.warning("Render with Muse scene images failed (%s); using standard visuals", image_exc.code)
+                    report(47, "Scene images could not be used - using standard visuals", "directing")
+                    production = plain_production
+                    video_path = Path(
+                        renderer.render(
+                            production,
+                            project_dir,
+                            job_id=video_id,
+                            process_manager=self.process_manager,
+                            progress_callback=lambda event: report(
+                                float(event["progress"]),
+                                str(event["message"]),
+                                str(event["state"]),
+                            ),
+                        )
+                    )
             except EngineError as exc:
                 # Full-fidelity browser rendering must never take Video Flow
                 # down with it: fall back once to the portable renderer.

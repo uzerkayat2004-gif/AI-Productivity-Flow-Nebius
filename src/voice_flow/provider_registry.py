@@ -433,6 +433,41 @@ PROVIDERS_REGISTRY: dict[str, ProviderSpec] = {
         ),
         passthrough_models=True,
     ),
+    # Optional: Meta Model API (Muse Spark); see voice_flow.meta_provider.
+    "meta_model_api": ProviderSpec(
+        id="meta_model_api",
+        alias="meta_model_api",
+        ui_alias="meta_model_api",
+        display=ProviderDisplay(
+            name="Meta Model API",
+            icon="cpu",
+            color="#0866FF",
+            website="https://dev.meta.ai",
+            notice=ProviderNotice(
+                text="Optional. OpenAI-compatible Meta Model API serving Muse Spark.",
+                api_key_url="https://dev.meta.ai/",
+            ),
+        ),
+        category="apikey",
+        thinking_config=ProviderThinkingConfig(
+            options=["minimal", "low", "medium", "high"], default_mode="low"
+        ),
+        transport=ProviderTransport(
+            format="openai",
+            base_url="https://api.meta.ai/v1/chat/completions",
+            validate_url="https://api.meta.ai/v1/models",
+            auth_header="bearer",
+        ),
+        models=[
+            ProviderModel("muse-spark-1.3", "Muse Spark 1.3"),
+            ProviderModel("muse-spark-1.2", "Muse Spark 1.2"),
+            ProviderModel("muse-spark-1.1", "Muse Spark 1.1"),
+        ],
+        models_fetcher=ProviderModelsFetcher(
+            url="https://api.meta.ai/v1/models", type="openai"
+        ),
+        passthrough_models=True,
+    ),
 }
 
 

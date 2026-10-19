@@ -5460,6 +5460,20 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     self.send_json_response({"success": False, "error": str(exc)}, 400)
                     return
                 response["nebius_routing"] = nebius_provider.routing_summary(service=video_flow_provider_service)
+            if provider == "meta_model_api" and any(k in data for k in ("meta_model_text", "meta_scene_images")):
+                # Optional Meta Model API: text model override (empty restores
+                # muse-spark-1.3 -> 1.2 -> 1.1) and the Muse Image scene-image
+                # switch, which is off unless the user turns it on.
+                from voice_flow import meta_provider
+                try:
+                    if "meta_model_text" in data:
+                        meta_provider.set_text_model_override(str(data.get("meta_model_text") or ""), video_flow_provider_service)
+                    if "meta_scene_images" in data:
+                        meta_provider.set_scene_images(data.get("meta_scene_images"), video_flow_provider_service)
+                except ValueError as exc:
+                    self.send_json_response({"success": False, "error": str(exc)}, 400)
+                    return
+                response["meta_routing"] = meta_provider.routing_summary(service=video_flow_provider_service)
             self.send_json_response(response)
 
 

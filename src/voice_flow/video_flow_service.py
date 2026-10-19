@@ -100,6 +100,8 @@ _PLANNING_ENDPOINTS = {
     "deepseek": "https://api.deepseek.com/v1/chat/completions",
     # Nebius Token Factory (NVIDIA Nemotron); see voice_flow.nebius_provider.
     "nebius": "https://api.tokenfactory.nebius.com/v1/chat/completions",
+    # Meta Model API (Muse Spark); see voice_flow.meta_provider. Opt-in only.
+    "meta_model_api": "https://api.meta.ai/v1/chat/completions",
     "antigravity": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     "agy": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
 }
@@ -676,6 +678,32 @@ class ProviderModelGateway:
         )
 
     @classmethod
+    def _from_meta(cls, model_id: str, tier: str) -> "ProviderModelGateway | None":
+        """Meta Model API gateway with Muse Spark model validation.
+
+        The key is a saved Video Flow connection or ``MODEL_API_KEY``; with
+        neither there is no gateway and no request. ``model_id`` may be a
+        concrete Muse model or the ``muse-auto`` alias; either way it is
+        checked against ``/v1/models`` (muse-spark-1.3 → 1.2 → 1.1).
+        """
+        from voice_flow import meta_provider
+
+        api_key = meta_provider.resolve_api_key()
+        if not api_key:
+            return None
+        # Video Flow planning can wait for the model list; Voice polishing
+        # (fast tier) must not, so it uses the cached list and warms it.
+        blocking = tier != "fast"
+        resolved = meta_provider.resolve_model(model_id, api_key=api_key, blocking=blocking, timeout=8.0)
+        return cls(
+            api_key=api_key,
+            provider=meta_provider.PROVIDER_ID,
+            model_id=resolved,
+            endpoint=meta_provider.CHAT_COMPLETIONS_URL,
+            max_output_tokens=8_192 if tier == "fast" else 16_000,
+        )
+
+    @classmethod
     def _from_video_provider_service(cls, provider_id: str, model_id: str, *, tier: str = "reasoning") -> "ProviderModelGateway | None":
         """Build a gateway from an isolated Video Flow provider connection.
 
@@ -688,6 +716,8 @@ class ProviderModelGateway:
 
         if provider_id == "nebius":
             return cls._from_nebius(model_id, tier)
+        if provider_id == "meta_model_api":
+            return cls._from_meta(model_id, tier)
 
         if provider_id == "codex":
             provider_id = "openai_codex"
@@ -845,6 +875,11 @@ class ProviderModelGateway:
             from voice_flow.nebius_provider import strip_reasoning
 
             content = strip_reasoning(content) or ""
+        elif self._provider == "meta_model_api":
+            # Muse reasoning is private, but never let a stray block through.
+            from voice_flow.meta_provider import strip_reasoning as _meta_strip
+
+            content = _meta_strip(content) or ""
         _append_provider_log(job_id, self._provider, self._model_id, "success", len(prompt), len(content), {"http_status": response.get("http_status")})
         return content
 

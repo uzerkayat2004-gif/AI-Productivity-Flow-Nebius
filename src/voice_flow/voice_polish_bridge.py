@@ -130,6 +130,10 @@ def can_execute_model(model_ref: str) -> bool:
             # Saved Token Factory connection or NEBIUS_API_KEY.
             from voice_flow import nebius_provider
             return nebius_provider.has_api_key(video_flow_provider_service)
+        if provider == "meta_model_api":
+            # Saved Meta Model API connection or MODEL_API_KEY.
+            from voice_flow import meta_provider
+            return meta_provider.has_api_key(video_flow_provider_service)
         if provider not in _PLANNING_ENDPOINTS:
             return False
         now = time.time()
@@ -289,6 +293,9 @@ def _request_polish(
         elif provider == "nebius":
             # Voice polishing and voice commands use the fast Nemotron tier.
             gateway = ProviderModelGateway._from_video_provider_service(provider, model, tier="fast")
+        elif provider == "meta_model_api":
+            # Muse Spark; "fast" means never wait on the /v1/models list.
+            gateway = ProviderModelGateway._from_video_provider_service(provider, model, tier="fast")
         else:
             gateway = ProviderModelGateway._from_video_provider_service(provider, model)
         if gateway is None:
@@ -320,7 +327,7 @@ def _request_polish(
                 timeout_seconds=max(0.05, float(timeout_seconds) - 0.15),
             )
             _diagnostic.status = status
-            if result and provider == "nebius":
+            if result and provider in ("nebius", "meta_model_api"):
                 from voice_flow.nebius_provider import strip_reasoning
                 result = strip_reasoning(result) or None
                 if result is None:

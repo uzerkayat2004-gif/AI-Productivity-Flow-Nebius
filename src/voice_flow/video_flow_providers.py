@@ -56,6 +56,7 @@ PROVIDERS: tuple[dict[str, Any], ...] = (
     {"id": "openrouter", "name": "OpenRouter", "category": "api_key", "prefix": "openrouter", "icon": "↔", "auth": "api_key", "description": "A broad catalog including free-routed models.", "get_key_url": "https://openrouter.ai/settings/keys"},
     {"id": "nvidia_nim", "name": "NVIDIA NIM", "category": "api_key", "prefix": "nim", "icon": "N", "auth": "api_key", "description": "NVIDIA-hosted open model endpoints.", "get_key_url": "https://build.nvidia.com/settings/api-keys"},
     {"id": "nebius", "name": "Nebius Token Factory", "category": "api_key", "prefix": "nebius", "icon": "N", "auth": "api_key", "description": "OpenAI-compatible Token Factory serving NVIDIA Nemotron models.", "get_key_url": "https://tokenfactory.nebius.com/", "env_key": "NEBIUS_API_KEY"},
+    {"id": "meta_model_api", "name": "Meta Model API", "category": "api_key", "prefix": "meta_model_api", "icon": "M", "auth": "api_key", "description": "Optional. OpenAI-compatible Meta Model API: Muse Spark text and optional Muse Image scene images.", "get_key_url": "https://dev.meta.ai/", "env_key": "MODEL_API_KEY"},
     {"id": "opencode_zen", "name": "OpenCode Zen", "category": "api_key", "prefix": "zen", "icon": "Z", "auth": "api_key", "description": "OpenCode Zen model access.", "get_key_url": "https://opencode.ai/auth"},
     {"id": "anthropic", "name": "Anthropic API", "category": "api_key", "prefix": "anthropic", "icon": "A", "auth": "api_key", "description": "Claude models with an Anthropic API key.", "get_key_url": "https://console.anthropic.com/settings/keys"},
     {"id": "openai", "name": "OpenAI API", "category": "api_key", "prefix": "openai", "icon": "◎", "auth": "api_key", "description": "OpenAI models with a project API key.", "get_key_url": "https://platform.openai.com/api-keys"},
@@ -307,6 +308,10 @@ DEFAULT_MODELS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("nebius", "nvidia/Nemotron-3_5-Lightning", "Nemotron 3.5 Lightning 30B A3B", ("reasoning", "code")),
     ("nebius", "nvidia/nemotron-3-super-120b-a12b", "Nemotron 3 Super 120B A12B", ("reasoning", "code")),
     ("nebius", "nvidia/Nemotron-3-Ultra-550b-a55b", "Nemotron 3 Ultra 550B A55B", ("reasoning", "code")),
+    ("meta_model_api", "muse-auto", "Muse Spark auto (1.3, then 1.2, then 1.1)", ("reasoning", "code")),
+    ("meta_model_api", "muse-spark-1.3", "Muse Spark 1.3", ("vision", "reasoning", "code")),
+    ("meta_model_api", "muse-spark-1.2", "Muse Spark 1.2", ("vision", "reasoning", "code")),
+    ("meta_model_api", "muse-spark-1.1", "Muse Spark 1.1", ("vision", "reasoning", "code")),
     ("opencode_zen", "deepseek-v4-flash-free", "DeepSeek V4 Flash Free", ("reasoning", "code")),
     ("opencode_zen", "nemotron-3-ultra-free", "Nemotron 3 Ultra Free", ("reasoning", "code")),
     ("opencode_zen", "laguna-s-2.1-free", "Laguna S 2.1 Free", ("reasoning", "code")),
@@ -516,7 +521,16 @@ class VideoFlowProviderService:
             "models": self.list_models(provider_id, include_inactive=True),
             "load_balance_mode": self.get_setting(f"load_balance:{provider_id}", "priority"),
             **({"nebius_routing": self._nebius_routing()} if provider_id == "nebius" else {}),
+            **({"meta_routing": self._meta_routing()} if provider_id == "meta_model_api" else {}),
         }
+
+    def _meta_routing(self) -> dict[str, Any]:
+        try:
+            from voice_flow import meta_provider
+
+            return meta_provider.routing_summary(service=self)
+        except Exception:
+            return {}
 
     def _nebius_routing(self) -> dict[str, Any]:
         try:
@@ -729,6 +743,14 @@ class VideoFlowProviderService:
                 result = nebius_provider.check_connection(key, timeout=30)
                 self.update_connection(connection_id, status="connected", last_latency_ms=int(result.get("latency_ms") or 0))
                 return result
+            elif provider_id == "meta_model_api":
+                # Meta Model API: GET /v1/models also warms the model list the
+                # Muse Spark router validates against.
+                from voice_flow import meta_provider
+
+                result = meta_provider.check_connection(key, timeout=30)
+                self.update_connection(connection_id, status="connected", last_latency_ms=int(result.get("latency_ms") or 0))
+                return result
             elif provider_id == "tavily":
                 from voice_flow.tavily_research import USAGE_URL
 
@@ -748,6 +770,7 @@ class VideoFlowProviderService:
                     "openrouter": "https://openrouter.ai/api/v1/models",
                     "nvidia_nim": "https://integrate.api.nvidia.com/v1/models",
                     "nebius": "https://api.tokenfactory.nebius.com/v1/models",
+                    "meta_model_api": "https://api.meta.ai/v1/models",
                     "opencode_zen": "https://opencode.ai/zen/v1/models",
                 }
                 url = model_endpoints.get(provider_id)

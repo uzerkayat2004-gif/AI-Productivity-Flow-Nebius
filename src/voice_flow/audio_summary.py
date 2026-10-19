@@ -331,6 +331,8 @@ class AudioSummaryService:
 
         if provider == "nebius":
             return self._call_nebius(model_id, prompt)
+        if provider == "meta_model_api":
+            return self._call_meta(model_id, prompt)
 
         connections = [
             conn for conn in video_flow_provider_service.active_connections(provider)
@@ -413,6 +415,7 @@ class AudioSummaryService:
             "openrouter": "https://openrouter.ai/api/v1",
             "nvidia_nim": "https://integrate.api.nvidia.com/v1",
             "nebius": "https://api.tokenfactory.nebius.com/v1",
+            "meta_model_api": "https://api.meta.ai/v1",
             "opencode_zen": "https://opencode.zen/v1",
         }
         base_url = connection.get("metadata", {}).get("base_url") or base_urls.get(provider, "https://api.openai.com/v1")
@@ -456,6 +459,27 @@ class AudioSummaryService:
         cleaned = nebius_provider.strip_reasoning(content) or ""
         if not cleaned:
             raise AudioSummaryError("Nebius returned no answer text.")
+        return cleaned
+
+    def _call_meta(self, model_id: str, prompt: str) -> str:
+        """Audio Flow summaries/explanations on Meta Model API (Muse Spark)."""
+        from voice_flow import meta_provider
+
+        api_key = meta_provider.resolve_api_key(video_flow_provider_service)
+        if not api_key:
+            raise AudioSummaryError("No Meta Model API key is set (add one in Video Flow providers or set MODEL_API_KEY).")
+        resolved = meta_provider.resolve_model(
+            model_id,
+            api_key=api_key,
+            settings_getter=video_flow_provider_service.get_setting,
+            timeout=8.0,
+        )
+        content = self._call_openai_compatible(
+            "meta_model_api", resolved, api_key, prompt, {"metadata": {"base_url": meta_provider.BASE_URL}}
+        )
+        cleaned = meta_provider.strip_reasoning(content) or ""
+        if not cleaned:
+            raise AudioSummaryError("Meta Model API returned no answer text.")
         return cleaned
 
     def _call_anthropic(self, model_id: str, secret: str, prompt: str) -> str:

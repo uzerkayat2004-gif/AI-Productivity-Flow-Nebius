@@ -88,6 +88,8 @@ OPENAI_COMPATIBLE_PROVIDERS = {
     "nvidia_nim": ("https://integrate.api.nvidia.com/v1/chat/completions", "meta/llama-3.1-8b-instruct"),
     # Nebius Token Factory: the fast Nemotron tier (voice_flow.nebius_provider).
     "nebius": ("https://api.tokenfactory.nebius.com/v1/chat/completions", "nvidia/Nemotron-3_5-Lightning"),
+    # Meta Model API (Muse Spark); see voice_flow.meta_provider. Opt-in only.
+    "meta_model_api": ("https://api.meta.ai/v1/chat/completions", "muse-spark-1.3"),
 }
 # Plain dictation must not lose the speaker's content. If the polished output
 # retains fewer words than this fraction of the source's non-filler words, it

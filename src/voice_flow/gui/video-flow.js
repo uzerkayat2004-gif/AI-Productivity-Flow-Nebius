@@ -903,7 +903,7 @@ const vfProviderIcons = {
   vertex_ai: "V", gemini: "✦", openrouter: "↔", nvidia_nim: "N",
   opencode_zen: "Z", anthropic: "A", openai: "◎", groq: "G",
   together: "T", cloudflare: "☁", ollama: "◉", lm_studio: "LM",
-  llama_cpp: "L", local: "💻", nebius: "N", tavily: "T",
+  llama_cpp: "L", local: "💻", nebius: "N", tavily: "T", meta_model_api: "M",
 }
 
 function vfJsArg(value) {
@@ -2410,7 +2410,7 @@ function openVideoModelPicker(context = "video_flow") {
     // shared picker must only offer models from those providers.
     const AUDIO_SUMMARY_PROVIDERS = new Set([
       "gemini", "openai", "groq", "together", "openrouter",
-      "nvidia_nim", "nim", "opencode_zen", "cloudflare", "anthropic", "nebius",
+      "nvidia_nim", "nim", "opencode_zen", "cloudflare", "anthropic", "nebius", "meta_model_api",
     ]);
     const candidates = (typeof vfCatalog !== "undefined" && vfCatalog && Array.isArray(vfCatalog.models)) ? vfCatalog.models : [];
     const allowed = candidates.filter(m =>
@@ -4889,6 +4889,10 @@ function renderVideoProviderDetails() {
   if (provider.id === "nebius") {
     html += vfNebiusRoutingCard(data.nebius_routing || {});
   }
+  // Meta Model API (optional): Muse Spark model and Muse Image scene images.
+  if (provider.id === "meta_model_api") {
+    html += vfMetaRoutingCard(data.meta_routing || {});
+  }
   // Tavily is a research source, not a model provider: no model list.
   if (provider.kind === "research") {
     html += '<div class="nine-router-card"><h2 class="models-title-9r">How it is used</h2>' +
@@ -4955,6 +4959,46 @@ async function vfSaveNebiusRouting() {
     vfToast(error.message || "Could not save routing.", true);
   }
   await refreshCurrentVideoProviderDetail("nebius");
+}
+
+function vfMetaRoutingCard(routing) {
+  const text = routing.text || {};
+  const images = routing.scene_images || {};
+  const defaults = (text.defaults || []).join(" \u2192 ");
+  let note = routing.validated
+    ? "Checked against your account's model list."
+    : "Not checked yet: press Test on a connection to load your account's model list.";
+  if (routing.env_key) note += " A MODEL_API_KEY environment key is also available.";
+  if (routing.key_format_ok === false) note += " The saved key does not look like LLM|id|secret; check it was copied in full.";
+  return '<div class="nine-router-card">' +
+    '<h2 class="models-title-9r">Meta Muse settings</h2>' +
+    '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + vfEscape(note) + ' Meta is only used when you pick a Meta model. If a model is not served, the newest Muse Spark your account has is used instead.</div>' +
+    '<div style="margin-bottom:12px;">' +
+      '<label for="vf-meta-text" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">Text model</label>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Voice Flow cleanup and commands, Audio Flow summaries, Video Flow planning and scenes. Default: ' + vfEscape(defaults) + '. Now using: <strong>' + vfEscape(text.resolved || "") + '</strong></div>' +
+      '<input id="vf-meta-text" type="text" placeholder="Leave empty to use the default" value="' + vfEscape(text.override || "") + '" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:var(--surface-2);color:var(--text);">' +
+    '</div>' +
+    '<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;margin-bottom:12px;">' +
+      '<input id="vf-meta-scene-images" type="checkbox"' + (images.enabled ? " checked" : "") + '>' +
+      '<span><strong>Scene images with Muse Image</strong> (off by default). When on, and external AI is allowed for a video, Video Flow asks ' + vfEscape(images.model || "muse-image-1.0") + ' for one background picture per scene (about $0.01 each). If anything fails, the normal scene visuals are used.</span>' +
+    '</label>' +
+    '<button class="btn-primary" style="padding:7px 16px;font-size:12px;" onclick="vfSaveMetaRouting()">Save</button>' +
+  '</div>';
+}
+
+async function vfSaveMetaRouting() {
+  try {
+    await vfPost("/api/video-flow/providers/settings", {
+      provider: "meta_model_api",
+      load_balance_mode: (vfCurrentProviderDetails && vfCurrentProviderDetails.load_balance_mode) || "priority",
+      meta_model_text: document.getElementById("vf-meta-text")?.value || "",
+      meta_scene_images: !!document.getElementById("vf-meta-scene-images")?.checked,
+    });
+    vfToast("Meta settings saved.");
+  } catch (error) {
+    vfToast(error.message || "Could not save Meta settings.", true);
+  }
+  await refreshCurrentVideoProviderDetail("meta_model_api");
 }
 
 function vfTavilyConnected() {
