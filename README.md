@@ -216,6 +216,19 @@ With the downloadable Nemotron speech model and a Nebius key, a dictation goes: 
 * When it is ticked and external AI planning is allowed, the app calls the Tavily Search API (`https://api.tavily.com/search`) once, puts the top sources (title, link, short snippet) into the planning prompt, and keeps the source titles and links in the plan (`storyboard.json` and `plan/research_sources.json`).
 * No key, the box off, or a Tavily error all mean the video is planned without web sources.
 
+## 🔵 Optional: Meta Model API (Muse Spark and Muse Image)
+
+*On the `feat/meta-muse` branch only, not on `main`.* You can also run the app's AI steps on Meta's Muse Spark models through the [Meta Model API](https://dev.meta.ai/docs/overview). It is opt-in: Nebius stays the default, Meta is never picked automatically, and without a Meta key the app makes no Meta calls and works exactly as before.
+
+1. Create a key on [dev.meta.ai](https://dev.meta.ai/). Keys look like `LLM|<number>|<secret>`.
+2. Open **Video Flow → Providers → Meta Model API**, click **Add**, and paste the key, or set the `MODEL_API_KEY` environment variable. A key saved in the app is used first.
+3. Click **Test**. It calls `GET https://api.meta.ai/v1/models` and shows which Muse Spark model will be used.
+4. Pick a Meta model (for example `Muse Spark auto`) in Voice Flow, Audio Flow or Video Flow.
+
+* **Text**: OpenAI-compatible Chat Completions at `https://api.meta.ai/v1/chat/completions`, Bearer key. Default `muse-spark-1.3`, then `muse-spark-1.2`, then `muse-spark-1.1`, checked against your account's `/v1/models` list (cached for 10 minutes).
+* **Scene images (Muse Image)**: an extra switch on the Meta provider page, off by default. When on, and external AI is allowed for a video, Video Flow asks `muse-image-1.0` (`POST /v1/images/generations`) for one background picture per scene. If any image fails, that scene keeps its normal visuals.
+* **Not tested live yet.** No Meta key existed when this was written, so it has only been checked with mocked HTTP (`pytest tests/test_meta_provider.py`). Details: [docs/HACKATHON_META.md](docs/HACKATHON_META.md).
+
 ---
 
 ## 🔒 Privacy & Security Architecture
