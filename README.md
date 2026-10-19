@@ -17,6 +17,40 @@
   <img src="docs/assets/ai-productivity-flow-hero-banner.png" alt="AI Productivity Flow Interface Banner" width="920">
 </p>
 
+<p align="center">
+  <b>🏆 Nebius x NVIDIA Global AI Hackathon edition — Best Apps and Agents track</b><br>
+  <i>This repository is the hackathon copy of AI Productivity Flow. It adds Nebius Token Factory and NVIDIA Nemotron routing to the app. The main app lives at <a href="https://github.com/uzerkayat2004-gif/AI-Productivity-Flow">uzerkayat2004-gif/AI-Productivity-Flow</a>.</i>
+</p>
+
+## 🧑‍⚖️ For judges: start here
+
+**What it is.** A desktop AI assistant for Windows and macOS with three tools that work inside any app: **Voice Flow** (speak, and polished text is typed where your cursor is), **Audio Flow** (select text and hear it read or summarised), and **Video Flow** (turn notes into a narrated explainer video).
+
+**What this hackathon edition adds** (all new since Aug 26, 2026):
+
+* **Nebius Token Factory provider.** OpenAI-compatible calls to `https://api.tokenfactory.nebius.com/v1/` with your own key. A **Test** button calls `/v1/models`.
+* **NVIDIA Nemotron routing by job.** Quick jobs (voice cleanup, voice commands, audio summaries) go to **Nemotron 3.5 Lightning**. Long, structured jobs (video planning and scene writing) go to **Nemotron 3 Ultra 550B**. **Nemotron 3 Super 120B** is the backup for both. Each model id is checked against your account's live model list before use.
+* **An all-NVIDIA voice pipeline.** Your voice → **Nemotron speech recognition on your own computer** → **Nemotron on Nebius** cleans it up → text typed into your app. The audio never leaves your computer.
+* **Optional Tavily web research** for Video Flow, so explainer videos are planned with real, cited sources.
+
+**Try it** (Python 3.10 or newer, Windows 10/11 or macOS 14+ on Apple Silicon):
+
+```bash
+git clone https://github.com/uzerkayat2004-gif/AI-Productivity-Flow-Nebius.git
+cd AI-Productivity-Flow-Nebius
+python -m venv .venv
+# Windows: .\.venv\Scripts\activate    macOS: source .venv/bin/activate
+pip install -e .
+export NEBIUS_API_KEY=your_token_factory_key      # Windows PowerShell: $env:NEBIUS_API_KEY="..."
+voice-flow
+```
+
+Then open **Video Flow → Providers → Nebius Token Factory → Test**, and pick a Nemotron model in Voice Flow, Audio Flow or Video Flow. The installers on the Releases page of the main app do **not** include the Nebius work yet, so run this repo from source.
+
+**More detail:** [docs/HACKATHON_NEBIUS.md](docs/HACKATHON_NEBIUS.md) covers what changed since Aug 26, exactly how Token Factory and Nemotron are used, and the known limits. Tests: `pytest tests/test_nebius_provider.py tests/test_tavily_research.py`.
+
+**Demo video:** _coming soon (YouTube, under 3 minutes)._
+
 ---
 
 ## ⚡ What is AI Productivity Flow?
@@ -223,8 +257,8 @@ To set up a local development environment or contribute:
 
 ```bash
 # Clone the repository
-git clone https://github.com/uzerkayat2004-gif/AI-Productivity-Flow.git
-cd AI-Productivity-Flow
+git clone https://github.com/uzerkayat2004-gif/AI-Productivity-Flow-Nebius.git
+cd AI-Productivity-Flow-Nebius
 
 # Create and activate a virtual environment
 python -m venv .venv
