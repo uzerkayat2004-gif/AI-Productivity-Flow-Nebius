@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11%20x64%20%7C%20macOS%2014%20Sonoma%2B-0078D4.svg" alt="Platforms">
   <img src="https://img.shields.io/badge/Architecture-Local--first%20%2F%20BYOK-success.svg" alt="Local-first / BYOK">
   <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache-2.0">
-  <a href="https://ai-productivity-flow.vercel.app/"><img src="https://img.shields.io/badge/Website-ai--productivity--flow.vercel.app-emerald.svg" alt="Official Website"></a>
+  <a href="https://aiproductivityflow.site/"><img src="https://img.shields.io/badge/Website-aiproductivityflow.site-emerald.svg" alt="Official Website"></a>
 </p>
 
 <p align="center">
@@ -118,7 +118,7 @@ Video Flow transforms dense articles, technical notes, or documentation into str
 <p align="center">
   <video src="https://github.com/user-attachments/assets/61afd3f3-d75b-4cff-8010-6a7f0d8657a9" controls width="100%"></video>
   <br>
-  <sub>🎬 <b><a href="https://ai-productivity-flow.vercel.app/assets/video/videoflow_demo.mp4">Watch or download Video Flow demo (MP4)</a></b></sub>
+  <sub>🎬 <b><a href="https://aiproductivityflow.site/assets/video/videoflow_demo.mp4">Watch or download Video Flow demo (MP4)</a></b></sub>
 </p>
 
 ```
@@ -150,7 +150,7 @@ Audio Flow gives you two dedicated ways to absorb written content without eye st
 <p align="center">
   <video src="https://github.com/user-attachments/assets/d1bc3228-548b-43a0-882d-d81665ee20a3" controls width="100%"></video>
   <br>
-  <sub>🎧 <b><a href="https://ai-productivity-flow.vercel.app/assets/video/audioflow_demo.mp4">Watch or download Audio Flow demo (MP4)</a></b></sub>
+  <sub>🎧 <b><a href="https://aiproductivityflow.site/assets/video/audioflow_demo.mp4">Watch or download Audio Flow demo (MP4)</a></b></sub>
 </p>
 
 * **How to start it**: select text with the mouse in any app, then click the small Listen button that appears next to it (or the floating bar) and pick Read or Summary. On Mac you can also press **Control+Option+L** to read the current selection aloud; press it again to stop. On Mac, reading your selection needs the Accessibility permission.
