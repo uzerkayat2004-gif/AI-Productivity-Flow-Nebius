@@ -47,7 +47,7 @@ Then open **Video Flow → API Providers → Nebius Token Factory**, click **Add
 
 **More detail:** [docs/HACKATHON_NEBIUS.md](docs/HACKATHON_NEBIUS.md) covers what changed since Aug 26, exactly how Token Factory and Nemotron are used, and the known limits. Tests: `pytest tests/test_nebius_provider.py`.
 
-**Demo video:** _coming soon (YouTube, under 3 minutes)._
+**Demo video:** [Watch on YouTube](https://youtu.be/oFbNBorun1s) (2:29)
 
 ---
 
