@@ -102,5 +102,5 @@ DISPLAY_VERSION = "1.0"     # user-facing label
 
 * 🐛 **Bug Reports & Feature Requests:** [GitHub Issues](https://github.com/uzerkayat2004-gif/AI-Productivity-Flow/issues)
 * 💬 **Discussions & Feedback:** [GitHub Discussions](https://github.com/uzerkayat2004-gif/AI-Productivity-Flow/discussions)
-* 🌐 **Project Website:** [https://aiproductivityflow.site/](https://aiproductivityflow.site/)
+* 🌐 **Project Website:** [https://ai-productivity-flow.vercel.app/](https://ai-productivity-flow.vercel.app/)
 * 👤 **Maintainer:** [@uzerkayat2004-gif](https://github.com/uzerkayat2004-gif) (Uzer Kayat)

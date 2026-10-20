@@ -406,16 +406,16 @@ PROVIDERS_REGISTRY: dict[str, ProviderSpec] = {
         display=ProviderDisplay(
             name="Nebius Token Factory",
             icon="cpu",
-            color="#D9FE5A",
+            color="#052B42",
             website="https://tokenfactory.nebius.com",
             notice=ProviderNotice(
-                text="OpenAI-compatible Token Factory serving NVIDIA Nemotron models.",
+                text="OpenAI-compatible hosted open models (Nemotron, DeepSeek, Qwen).",
                 api_key_url="https://tokenfactory.nebius.com/",
             ),
         ),
         category="apikey",
         thinking_config=ProviderThinkingConfig(
-            options=["low", "medium", "high"], default_mode="low"
+            options=["low", "medium", "high"], default_mode="medium"
         ),
         transport=ProviderTransport(
             format="openai",
@@ -424,9 +424,10 @@ PROVIDERS_REGISTRY: dict[str, ProviderSpec] = {
             auth_header="bearer",
         ),
         models=[
-            ProviderModel("nvidia/Nemotron-3_5-Lightning", "Nemotron 3.5 Lightning (fast tier)"),
+            ProviderModel("nvidia/Nemotron-3_5-Lightning", "Nemotron 3.5 Lightning"),
             ProviderModel("nvidia/nemotron-3-super-120b-a12b", "Nemotron 3 Super 120B"),
-            ProviderModel("nvidia/Nemotron-3-Ultra-550b-a55b", "Nemotron 3 Ultra 550B (reasoning tier)"),
+            ProviderModel("deepseek-ai/DeepSeek-V4-Flash-0731", "DeepSeek V4 Flash"),
+            ProviderModel("Qwen/Qwen3-235B-A22B-Instruct-2507", "Qwen3 235B Instruct"),
         ],
         models_fetcher=ProviderModelsFetcher(
             url="https://api.tokenfactory.nebius.com/v1/models", type="openai"

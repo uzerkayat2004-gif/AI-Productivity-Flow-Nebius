@@ -37,7 +37,7 @@ _RATE_LIMIT_META_KEYS = (
     "allow_external_ai", "allow_local_fallback", "voice", "duration_seconds",
     "target_duration_seconds", "video_engine", "provider", "format", "requested_format", "style", "style_prompt", "language",
     "focus", "source_url", "source_file", "profile", "notebook_id",
-    "source_id", "task_id", "research_web",
+    "source_id", "task_id",
 )
 _RESET_TIME_RE = re.compile(r"resets?\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?", re.I)
 
@@ -98,7 +98,6 @@ _PLANNING_ENDPOINTS = {
     "nvidia_nim": "https://integrate.api.nvidia.com/v1/chat/completions",
     "nim": "https://integrate.api.nvidia.com/v1/chat/completions",
     "deepseek": "https://api.deepseek.com/v1/chat/completions",
-    # Nebius Token Factory (NVIDIA Nemotron); see voice_flow.nebius_provider.
     "nebius": "https://api.tokenfactory.nebius.com/v1/chat/completions",
     "antigravity": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     "agy": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -555,7 +554,7 @@ class ProviderModelGateway:
             elif preferred_provider and preferred_provider not in ("local", ""):
                 requested_provider, requested_model = preferred_provider, preferred_model
             else:
-                for cand in ("openai_codex", "gemini", "openai", "openrouter", "anthropic", "groq", "nebius"):
+                for cand in ("openai_codex", "gemini", "openai", "openrouter", "anthropic", "groq"):
                     gw = cls._from_video_provider_service(cand, "")
                     if gw is not None:
                         return gw
@@ -583,7 +582,7 @@ class ProviderModelGateway:
         connections = storage.get_provider_connections("groq") if hasattr(storage, "get_provider_connections") else []
         connection = next((item for item in connections if item.get("is_active")), None)
         if not connection or not str(connection.get("api_key") or "").strip():
-            for cand in ("openai_codex", "gemini", "openai", "openrouter", "anthropic", "nebius"):
+            for cand in ("openai_codex", "gemini", "openai", "openrouter", "anthropic"):
                 gw = cls._from_video_provider_service(cand, "")
                 if gw is not None:
                     return gw
@@ -643,51 +642,13 @@ class ProviderModelGateway:
         return cls(api_key=key, provider=provider_id, model_id=model_id, endpoint=endpoint, max_output_tokens=8_192)
 
     @classmethod
-    def _from_nebius(cls, model_id: str, tier: str) -> "ProviderModelGateway | None":
-        """Nebius Token Factory gateway with Nemotron tier routing.
-
-        The key is a saved Video Flow connection or ``NEBIUS_API_KEY``; with
-        neither there is no gateway and no request. ``model_id`` may be a
-        concrete model or a tier alias (``nemotron-fast``/``nemotron-reasoning``);
-        either way it is checked against ``/v1/models`` and replaced by the
-        tier's served Nemotron model when the account does not serve it.
-        """
-        from voice_flow import nebius_provider
-
-        api_key = nebius_provider.resolve_api_key()
-        if not api_key:
-            return None
-        # Video Flow planning can wait for the model list; Voice polishing
-        # (fast tier) must not, so it uses the cached list and warms it.
-        blocking = tier != nebius_provider.TIER_FAST
-        resolved = nebius_provider.resolve_model(
-            model_id,
-            default_tier=tier,
-            api_key=api_key,
-            blocking=blocking,
-            timeout=8.0,
-        )
-        return cls(
-            api_key=api_key,
-            provider="nebius",
-            model_id=resolved,
-            endpoint=nebius_provider.CHAT_COMPLETIONS_URL,
-            max_output_tokens=8_192 if tier == nebius_provider.TIER_FAST else 16_000,
-        )
-
-    @classmethod
-    def _from_video_provider_service(cls, provider_id: str, model_id: str, *, tier: str = "reasoning") -> "ProviderModelGateway | None":
+    def _from_video_provider_service(cls, provider_id: str, model_id: str) -> "ProviderModelGateway | None":
         """Build a gateway from an isolated Video Flow provider connection.
 
         Only providers with an OpenAI-compatible chat-completions endpoint
-        (built-in map or a connection base_url) can plan. ``tier`` only
-        matters for Nebius: Video Flow plans on the reasoning tier, Voice and
-        Audio Flow pass the fast tier.
+        (built-in map or a connection base_url) can plan.
         """
         from voice_flow.video_flow_providers import video_flow_provider_service
-
-        if provider_id == "nebius":
-            return cls._from_nebius(model_id, tier)
 
         if provider_id == "codex":
             provider_id = "openai_codex"
@@ -841,9 +802,8 @@ class ProviderModelGateway:
             raise RuntimeError(message)
         content = str(response["content"])
         if self._provider == "nebius":
-            # Nemotron may return its reasoning inline; keep only the answer.
+            # Some Token Factory models return inline <think> reasoning.
             from voice_flow.nebius_provider import strip_reasoning
-
             content = strip_reasoning(content) or ""
         _append_provider_log(job_id, self._provider, self._model_id, "success", len(prompt), len(content), {"http_status": response.get("http_status")})
         return content
@@ -941,9 +901,10 @@ class VideoFlowService:
         if source_text and len(source_text) > 100_000:
             raise ValueError("source_text exceeds the 100000-character limit")
         video_engine = _normalise_video_engine(video_engine or options.get("provider"))
-        if not str(title or "").strip():
-            # Auto-name from the source's main topic (first meaningful line),
-            # like every mainstream app does when the user leaves the name blank.
+        title_auto = not str(title or "").strip()
+        if title_auto:
+            # Auto-name from the source's main topic. When NotebookLM makes the
+            # video, its own topic title replaces this once the video is ready.
             title = _derive_video_title(source_text)
         if duration_seconds is not None:
             try:
@@ -982,6 +943,7 @@ class VideoFlowService:
             message="Queued",
             meta={
                 "title": _redact(title),
+                "title_auto": title_auto,
                 "source_name": _redact(source_name),
                 "output_path": str(self._output_path(job_id)),
                 "source_text": source_text,
@@ -1008,7 +970,6 @@ class VideoFlowService:
                 "notebook_id": options.get("notebook_id"),
                 "source_id": options.get("source_id"),
                 "task_id": options.get("task_id"),
-                "research_web": bool(options.get("research_web") is True),
                 "document_profile": (
                     options["document_profile"].to_dict()
                     if hasattr(options.get("document_profile"), "to_dict")
@@ -1311,6 +1272,11 @@ class VideoFlowService:
                 )
                 return
             meta_updates: dict[str, Any] = {"output_path": str(output)}
+            topic_title = _notebooklm_topic_title(result)
+            if topic_title:
+                current = self.store.get(job_id)
+                if current is not None and (current.meta or {}).get("title_auto"):
+                    meta_updates["title"] = topic_title
             if result.get("provenance") is not None:
                 meta_updates["provenance"] = result.get("provenance")
             if result.get("duration_seconds") is not None:
@@ -1533,21 +1499,84 @@ def _normalise_video_engine(value: Any) -> str:
         return "visual-v2.1"
     raise ValueError("video_engine must be visual-v2.1, native, or notebooklm")
 
+_GENERIC_TITLES = {
+    "video overview", "untitled", "untitled notebook", "untitled video", "notebook",
+    "pasted text", "selected text", "copied text", "new notebook", "overview",
+}
+
+_TITLE_FILLER = re.compile(
+    r"^(?:so|okay|ok|well|hi|hello|hey|note|notes|summary|title|topic|subject|re|fwd?)\s*[:,\-\u2013\u2014]\s*",
+    re.IGNORECASE,
+)
+_TITLE_LEADS = re.compile(
+    r"^(?:in this (?:article|post|guide|video|document|essay|paper|blog post),?\s*(?:we(?:'ll| will)? (?:look at|explore|discuss|cover|learn about|talk about)\s*)?|"
+    r"this (?:article|post|guide|document|essay|paper|text) (?:is about|explains|covers|describes|looks at|discusses)\s+|"
+    r"let(?:'s| us) (?:talk about|look at|explore|discuss)\s+|"
+    r"(?:today|here),?\s*(?:we(?:'ll| will| are going to)?|i(?:'ll| will| am going to)?) (?:talk about|look at|explore|discuss|explain|cover)\s+)",
+    re.IGNORECASE,
+)
+
+
+def _notebooklm_topic_title(result: Mapping[str, Any] | Any) -> str:
+    """NotebookLM's own name for the finished video, when it is a real topic."""
+    if not isinstance(result, Mapping):
+        return ""
+    artifact = result.get("artifact")
+    value = ""
+    if isinstance(artifact, Mapping):
+        value = str(artifact.get("artifact_title") or "")
+    value = value or str(result.get("artifact_title") or "")
+    value = " ".join(value.split()).strip(" \"'")
+    if not value or value.lower() in _GENERIC_TITLES or len(value) < 3:
+        return ""
+    return value[:100]
+
+
+def _tidy_title(text: str) -> str:
+    text = _TITLE_FILLER.sub("", text.strip())
+    text = _TITLE_LEADS.sub("", text).strip()
+    text = text.strip(" \t\"'`*_#:;,-\u2013\u2014")
+    text = re.sub(r"[.!?\u2026]+$", "", text).strip()
+    words = text.split()
+    if len(words) > 9:
+        text = " ".join(words[:9])
+        text = re.sub(r"[,;:\-\u2013\u2014]+$", "", text).strip() + "..."
+    if text and text[0].islower():
+        text = text[0].upper() + text[1:]
+    return text
+
+
 def _derive_video_title(source_text: str) -> str:
-    """Derive a human title from the source's main topic."""
-    import re as _re
-    for raw in (source_text or "").splitlines():
-        line = _re.sub(r"^#+\s*", "", (raw or "").strip())
-        line = _re.sub(r"^[\*\-\u2022\d\.\s]+", "", line).strip()
-        line = _re.sub(r"\*+", "", line).strip()
-        if len(line) >= 8:
-            out = " ".join(line.split()[:9]).strip()
-            return (out[:57].rstrip() + "...") if len(out) > 60 else out
-    text = _re.sub(r"\s+", " ", (source_text or "")).strip()
+    """Name the video after the source's topic.
+
+    Order: a markdown heading or "Title:" line, then a short heading-like first
+    line, then the first sentence with filler such as "In this article" cut.
+    """
+    lines = [(raw or "").strip() for raw in (source_text or "").splitlines()]
+    lines = [line for line in lines if line]
+    for line in lines[:40]:
+        heading = re.match(r"^#{1,3}\s+(.+)$", line)
+        labelled = re.match(r"^(?:title|topic|subject)\s*[:\-]\s*(.+)$", line, re.IGNORECASE)
+        found = heading or labelled
+        if found:
+            title = _tidy_title(re.sub(r"\*+", "", found.group(1)))
+            if len(title) >= 3 and title.lower() not in _GENERIC_TITLES:
+                return title
+    if lines:
+        first = re.sub(r"^[\*\-\u2022\d\.\)\s]+", "", lines[0])
+        first = re.sub(r"\*+", "", first).strip()
+        words = first.split()
+        heading_like = 2 <= len(words) <= 12 and not re.search(r"[.!?,;]$", first)
+        if heading_like and len(lines) > 1:
+            title = _tidy_title(first)
+            if len(title) >= 3 and title.lower() not in _GENERIC_TITLES:
+                return title
+    text = re.sub(r"\s+", " ", re.sub(r"[#*`>_]+", " ", source_text or "")).strip()
     if text:
-        sentence = _re.split(r"(?<=[.!?])\s", text)[0]
-        out = " ".join(sentence.split()[:9]).strip()
-        return (out[:57].rstrip() + "...") if len(out) > 60 else out
+        sentence = re.split(r"(?<=[.!?])\s", text)[0]
+        title = _tidy_title(sentence)
+        if len(title) >= 3:
+            return title
     return "Video Overview"
 
 def _split_model_ref(model_ref: str | None) -> tuple[str, str]:

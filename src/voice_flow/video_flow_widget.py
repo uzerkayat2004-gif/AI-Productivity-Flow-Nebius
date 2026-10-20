@@ -582,11 +582,6 @@ class VideoFlowScreenWidget:
         self._run_on_ui(_hide)
 
     def show_composer(self, selected_text: str = "", mode: str = "summary", anchor_bar: Any = None, ask_treatment: bool = False, video_format: str | None = None) -> None:
-        from voice_flow.video_flow_platform import video_flow_supported
-
-        if not video_flow_supported():
-            log.info("[VIDEO FLOW] Composer not available on macOS yet.")
-            return
         clean = (selected_text or "").strip()
 
         def _show() -> None:
@@ -627,10 +622,11 @@ class VideoFlowScreenWidget:
                 if source_txt:
                     self._controls["source"].insert("1.0", source_txt)
             if "title" in self._controls:
-                current_title = self._controls["title"].get().strip()
-                if not current_title and source_txt:
-                    first_line = source_txt.strip().split("\n")[0].strip()[:60]
-                    self._controls["title"].set(first_line)
+                # Every new selection starts with an empty name, so the video is
+                # named after its own topic (NotebookLM's title when it makes
+                # it). Before, the first line of the first selection stuck and
+                # every later video reused that stale name.
+                self._controls["title"].set("")
             if "mode" in self._controls:
                 self._controls["mode"].set(self._mode)
             if "file_label" in self._controls:
@@ -1169,7 +1165,7 @@ class VideoFlowScreenWidget:
         title_frame = tk.Frame(shell, bg=colors["surface"])
         self._title_frame = title_frame
         title_frame.pack(fill="x", pady=(0, 12))
-        self._label(title_frame, "Video Title (optional)")
+        self._label(title_frame, "Video Title (optional, named from the topic if left blank)")
         title = tk.Entry(
             title_frame,
             textvariable=title_var,

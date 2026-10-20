@@ -19,7 +19,7 @@
 
 <p align="center">
   <b>🏆 Nebius x NVIDIA Global AI Hackathon edition — Best Apps and Agents track</b><br>
-  <i>This repository is the hackathon copy of AI Productivity Flow. It adds Nebius Token Factory and NVIDIA Nemotron routing to the app. The main app lives at <a href="https://github.com/uzerkayat2004-gif/AI-Productivity-Flow">uzerkayat2004-gif/AI-Productivity-Flow</a>.</i>
+  <i>This repository is the hackathon copy of AI Productivity Flow. It runs the app's AI steps on NVIDIA Nemotron models through Nebius Token Factory. The main app lives at <a href="https://github.com/uzerkayat2004-gif/AI-Productivity-Flow">uzerkayat2004-gif/AI-Productivity-Flow</a>.</i>
 </p>
 
 ## 🧑‍⚖️ For judges: start here
@@ -28,10 +28,9 @@
 
 **What this hackathon edition adds** (all new since Aug 26, 2026):
 
-* **Nebius Token Factory provider.** OpenAI-compatible calls to `https://api.tokenfactory.nebius.com/v1/` with your own key. A **Test** button calls `/v1/models`.
-* **NVIDIA Nemotron routing by job.** Quick jobs (voice cleanup, voice commands, audio summaries) go to **Nemotron 3.5 Lightning**. Long, structured jobs (video planning and scene writing) go to **Nemotron 3 Ultra 550B**. **Nemotron 3 Super 120B** is the backup for both. Each model id is checked against your account's live model list before use.
+* **Nebius Token Factory provider.** Add your Token Factory key in the app and pick an NVIDIA Nemotron model. The app makes OpenAI-compatible calls to `https://api.tokenfactory.nebius.com/v1/`. A **Test** button checks the key against `/v1/models`.
+* **Nemotron in all three flows.** Pick **Nemotron 3.5 Lightning** or **Nemotron 3 Super 120B** for Voice Flow cleanup and voice commands, Video Flow planning, and Audio Flow summaries. Any other Token Factory model id can be added with **Add Model**.
 * **An all-NVIDIA voice pipeline.** Your voice → **Nemotron speech recognition on your own computer** → **Nemotron on Nebius** cleans it up → text typed into your app. The audio never leaves your computer.
-* **Optional Tavily web research** for Video Flow, so explainer videos are planned with real, cited sources.
 
 **Try it** (Python 3.10 or newer, Windows 10/11 or macOS 14+ on Apple Silicon):
 
@@ -41,13 +40,12 @@ cd AI-Productivity-Flow-Nebius
 python -m venv .venv
 # Windows: .\.venv\Scripts\activate    macOS: source .venv/bin/activate
 pip install -e .
-export NEBIUS_API_KEY=your_token_factory_key      # Windows PowerShell: $env:NEBIUS_API_KEY="..."
 voice-flow
 ```
 
-Then open **Video Flow → Providers → Nebius Token Factory → Test**, and pick a Nemotron model in Voice Flow, Audio Flow or Video Flow. The installers on the Releases page of the main app do **not** include the Nebius work yet, so run this repo from source.
+Then open **Video Flow → API Providers → Nebius Token Factory**, click **Add**, paste your key and click **Test**. Now pick a Nebius Nemotron model in Voice Flow, Audio Flow or Video Flow. You can also install the latest release from the main app; it includes the same Nebius provider.
 
-**More detail:** [docs/HACKATHON_NEBIUS.md](docs/HACKATHON_NEBIUS.md) covers what changed since Aug 26, exactly how Token Factory and Nemotron are used, and the known limits. Tests: `pytest tests/test_nebius_provider.py tests/test_tavily_research.py`.
+**More detail:** [docs/HACKATHON_NEBIUS.md](docs/HACKATHON_NEBIUS.md) covers what changed since Aug 26, exactly how Token Factory and Nemotron are used, and the known limits. Tests: `pytest tests/test_nebius_provider.py`.
 
 **Demo video:** _coming soon (YouTube, under 3 minutes)._
 
@@ -59,7 +57,7 @@ AI Productivity Flow is a desktop AI system engineered to operate seamlessly alo
 
 Select any text, notes, or documentation on screen, or tap a global shortcut to speak naturally:
 
-1. **🎬 Video Flow** — Generate visual explainer videos with narration and synchronized motion graphics. Video Flow is coming to Mac soon, available on Windows now.
+1. **🎬 Video Flow** — Generate visual explainer videos with narration and synchronized motion graphics.
 2. **🎧 Audio Flow** — Read text aloud or listen to structured multi-depth audio summaries.
 3. **🎙️ Voice Flow** — Dictate directly into any focused application with instant text injection.
 
@@ -92,7 +90,7 @@ The Mac disk image is about **271 MB**. The zip archive is about **287 MB**.
 
 #### Installing on Mac
 
-The Mac build is Apple Silicon only (M1 or newer); it does not run on Intel Macs. Download links above stay on the latest stable release. On Mac you get Voice Flow and Audio Flow. Video Flow is coming to Mac soon, available on Windows now.
+The Mac build is Apple Silicon only (M1 or newer); it does not run on Intel Macs. Download links above stay on the latest stable release. On Mac you get all three: Video Flow, Audio Flow and Voice Flow.
 
 1. Open the DMG and drag the app to Applications.
 2. The app is not signed yet, so the first time you open it macOS blocks it. On macOS 15 and later, right-click → Open no longer gets past this. Instead:
@@ -113,7 +111,7 @@ The Mac build is Apple Silicon only (M1 or newer); it does not run on Intel Macs
 
 Video Flow transforms dense articles, technical notes, or documentation into structured, animated MP4 explainer videos with synchronized voiceover narration.
 
-> **Platform note:** Video Flow is coming to Mac soon, available on Windows now.
+> **Platform note:** Video Flow works on Windows and macOS (Apple Silicon).
 
 <p align="center">
   <video src="https://github.com/user-attachments/assets/61afd3f3-d75b-4cff-8010-6a7f0d8657a9" controls width="100%"></video>
@@ -172,7 +170,7 @@ Voice Flow lets you speak naturally and injects clean, formatted text directly i
 * **On-Device & Cloud AI Polish**:
   * Downloadable on-device polish models (**S1-mini by Superwhisper**, **Liquid LFM 2.5 350M**) via llama.cpp for private text cleanup.
   * Windows AI Text Rewriter where supported by hardware.
-  * Optional cloud LLMs (Gemini, Claude, OpenAI, Groq, Ollama, and NVIDIA Nemotron through Nebius Token Factory) for smart cleanup, conversational rewriting, and prompt formulation.
+  * Optional cloud LLMs (Gemini, Claude, OpenAI, Groq, Nebius Token Factory, Ollama) for smart cleanup, conversational rewriting, and prompt formulation.
 * **Voice Commands**: Commands such as "make this an email" or "summarize this" need a cloud polish model (for example Gemini with your own API key). Local polish (S1-mini, LFM) cleans up your dictation but does not run commands.
 * **"Hey Voice Flow"**: This works inside a normal dictation, not as an always-on listener. Press your dictation hotkey, then say something like "Hey Voice Flow, make this an email..." The app only listens while you are dictating.
 * **Personal Dictionary & Snippets**: Add custom acronyms, jargon, and snippet abbreviations that expand automatically with cross-process memory.
@@ -181,40 +179,36 @@ Voice Flow lets you speak naturally and injects clean, formatted text directly i
 
 ## 🟢 Nebius Token Factory + NVIDIA Nemotron
 
-You can run the app's AI steps on NVIDIA Nemotron models hosted by [Nebius Token Factory](https://tokenfactory.nebius.com/). It is optional. Without a Nebius key the app makes no Nebius calls and everything works as before, including the offline fallbacks.
+You can run the app's AI steps on NVIDIA Nemotron models hosted by [Nebius Token Factory](https://tokenfactory.nebius.com/). It is optional and only used when you pick a Nebius model. Without a Nebius key the app makes no Nebius calls and everything works as before, including the offline fallbacks.
 
 ### Setup
 
 1. Create an API key in Nebius Token Factory.
-2. Open **Video Flow → Providers → Nebius Token Factory**, click **Add**, and paste the key. You can also set the `NEBIUS_API_KEY` environment variable instead; a key saved in the app is used first.
-3. Click **Test**. It calls `GET https://api.tokenfactory.nebius.com/v1/models` with your key and shows which Nemotron model each tier will use. Once the test passes, the Nebius models appear in the model pickers.
-4. Pick a Nebius model wherever you pick a model: Voice Flow polish, Audio Flow summaries, or Video Flow planning. `Nemotron auto (fast tier)` and `Nemotron auto (reasoning tier)` let the app choose for you.
+2. Open **Video Flow → API Providers → Nebius Token Factory**, click **Add**, and paste the key. The key is stored on your computer like every other provider key.
+3. Click **Test**. It calls `GET https://api.tokenfactory.nebius.com/v1/models` with your key. Once the test passes, the Nebius models appear in the model pickers.
+4. Pick a Nebius model wherever you pick a model: Voice Flow cleanup, Audio Flow summaries, or Video Flow planning.
 
 Token Factory is OpenAI-compatible, so the app uses the same Chat Completions requests it already sends to OpenAI and Groq, with base URL `https://api.tokenfactory.nebius.com/v1/` and a Bearer key.
 
-### Which model handles what, and why
+### Models
 
-| Tier | Default model | Fallback | Used for |
-| --- | --- | --- | --- |
-| Fast | `nvidia/Nemotron-3_5-Lightning` | `nvidia/nemotron-3-super-120b-a12b` | Voice Flow polishing, voice commands, Audio Flow summaries and explanations |
-| Reasoning | `nvidia/Nemotron-3-Ultra-550b-a55b` | `nvidia/nemotron-3-super-120b-a12b` | Video Flow planning, creative direction, scene authoring |
+| Model | Id | Good for |
+| --- | --- | --- |
+| Nemotron 3.5 Lightning | `nvidia/Nemotron-3_5-Lightning` | Fast jobs: Voice Flow cleanup and voice commands, Audio Flow summaries, quick video plans |
+| Nemotron 3 Super 120B | `nvidia/nemotron-3-super-120b-a12b` | Longer, structured jobs such as Video Flow planning |
+| DeepSeek V4 Flash | `deepseek-ai/DeepSeek-V4-Flash-0731` | Non-NVIDIA option |
+| Qwen3 235B Instruct | `Qwen/Qwen3-235B-A22B-Instruct-2507` | Non-NVIDIA option |
 
-* **Fast tier**: dictation cleanup has to land in a few seconds, so it uses Lightning (30B total, 3B active). Super is the fallback.
-* **Reasoning tier**: a video plan is a long structured job, so it uses Ultra. Super is the fallback.
-* **Checked at runtime**: before a request, the chosen id is checked against your account's `/v1/models` list (cached for 10 minutes). If it is not served, the app uses the tier's fallback, then the closest Nemotron model your account has. Voice polishing never waits for this list; it uses the cached copy and refreshes it in the background.
-* **Your own choice**: the Nebius provider page has a **Fast tier** and a **Reasoning tier** box. A model id typed there replaces the default for that tier. Leave it empty to use the default.
-* Model ids come from the Nebius Token Factory listing on [models.dev](https://models.dev).
+* The list was checked against the public Token Factory model catalog. Any other model id (for example `nvidia/Nemotron-3-Ultra-550b-a55b`) can be added with **Add Model**.
+* Nemotron can return its reasoning in a `<think>` block. The app removes it from Nebius answers before using them.
 
 ### The full voice pipeline
 
-With the downloadable Nemotron speech model and a Nebius key, a dictation goes: your voice → **NVIDIA Nemotron speech recognition on your device** (Nemotron Speech Streaming English 0.6B or Nemotron 3.5 ASR Streaming 0.6B, Q8_0 GGUF) → **Nemotron fast tier on Nebius** for cleanup or the voice command → text typed into your app. The audio stays on your computer; only the transcript goes to Nebius.
+With the downloadable Nemotron speech model and a Nebius Nemotron model picked for cleanup, a dictation goes: your voice → **NVIDIA Nemotron speech recognition on your device** (Nemotron Speech Streaming English 0.6B or Nemotron 3.5 ASR Streaming 0.6B, Q8_0 GGUF) → **Nemotron on Nebius** for cleanup or the voice command → text typed into your app. The audio stays on your computer; only the transcript goes to Nebius.
 
-### Optional web research for Video Flow (Tavily)
+### Audio Flow voices
 
-* Save a [Tavily](https://app.tavily.com) key under **Video Flow → Providers → Tavily Web Research** (or set `TAVILY_API_KEY`). **Test** calls Tavily's usage endpoint.
-* A **Research with web sources** box then appears next to the external-AI consent box when you make a video. It is off by default.
-* When it is ticked and external AI planning is allowed, the app calls the Tavily Search API (`https://api.tavily.com/search`) once, puts the top sources (title, link, short snippet) into the planning prompt, and keeps the source titles and links in the plan (`storyboard.json` and `plan/research_sources.json`).
-* No key, the box off, or a Tavily error all mean the video is planned without web sources.
+Token Factory has no speech models, so Audio Flow's spoken audio uses the app's own voice engines (Microsoft Edge Neural by default). A Nebius Nemotron model can write the Audio Flow summary that is then read aloud.
 
 ---
 

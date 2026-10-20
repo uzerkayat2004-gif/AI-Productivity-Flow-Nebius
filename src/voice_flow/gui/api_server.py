@@ -68,7 +68,6 @@ from voice_flow.runtime_contract import RUNTIME_CONTRACT_VERSION, RUNTIME_FEATUR
 from voice_flow.runtime_guard import runtime_is_compatible
 from voice_flow.local_server import LoopbackHTTPServer, require_loopback_host
 from voice_flow.video_flow_service import get_video_flow_service
-from voice_flow.video_flow_platform import video_flow_supported, video_flow_unsupported_payload
 
 # Video Flow POST routes that start or re-run a render. Refused on macOS,
 # where the render toolchain is not bundled yet. NotebookLM sign-in and the
@@ -2739,12 +2738,6 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
             return
 
         path = urllib.parse.urlparse(self.path).path
-
-        if path in VIDEO_FLOW_RENDER_POST_PATHS and not video_flow_supported():
-            # macOS build ships no Video Flow render toolchain yet; refuse
-            # before any job, analyzer, or Windows-only code is reached.
-            self.send_json_response(video_flow_unsupported_payload(), 501)
-            return
 
         if path in {"/auth/logout", "/auth/desktop/session", "/api/auth/google", "/api/auth/google/start", "/api/auth/register", "/api/auth/login", "/api/auth/switch", "/api/auth/logout", "/api/app/restart", "/api/storage/clear-audio-cache", "/api/overlay/reset-and-refresh"}:
             reason = settings_busy_reason()
@@ -5447,20 +5440,7 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     entry["load_balance_mode"] = mode
                     storage.add_video_flow_custom_provider(entry)
             video_flow_provider_service.set_setting(f"load_balance:{provider}", mode)
-            response = {"success": True, "load_balance_mode": mode}
-            if provider == "nebius" and any(k in data for k in ("nebius_model_fast", "nebius_model_reasoning")):
-                # Per-tier Nemotron overrides; empty restores the default.
-                from voice_flow import nebius_provider
-                try:
-                    for tier in nebius_provider.TIERS:
-                        key = nebius_provider.SETTING_KEYS[tier]
-                        if key in data:
-                            nebius_provider.set_tier_override(tier, str(data.get(key) or ""), video_flow_provider_service)
-                except ValueError as exc:
-                    self.send_json_response({"success": False, "error": str(exc)}, 400)
-                    return
-                response["nebius_routing"] = nebius_provider.routing_summary(service=video_flow_provider_service)
-            self.send_json_response(response)
+            self.send_json_response({"success": True, "load_balance_mode": mode})
 
 
         elif path == "/api/video-flow/oauth/start":
@@ -6821,8 +6801,7 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     for key in ("mode", "title", "source_name", "model_ref", "theme", "visual_direction",
                                 "allow_external_ai", "allow_local_fallback", "voice", "duration_seconds",
                                 "video_engine", "provider", "format", "style", "style_prompt", "language",
-                                "focus", "source_url", "source_file", "profile", "notebook_id", "source_id", "task_id",
-                                "research_web"):
+                                "focus", "source_url", "source_file", "profile", "notebook_id", "source_id", "task_id"):
                         if meta.get(key) is not None:
                             kwargs[key] = meta.get(key)
                     new_job = service.queue(str(meta.get("source_text") or ""), **kwargs)
@@ -8285,6 +8264,8 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     base = "https://api.together.xyz/v1"
                 elif provider in ("nvidia_nim", "nim", "nvidia"):
                     base = "https://integrate.api.nvidia.com/v1"
+                elif provider == "nebius":
+                    base = "https://api.tokenfactory.nebius.com/v1"
                 elif provider in ("opencode_zen", "zen"):
                     base = "https://opencode.ai/zen/v1"
                 elif provider == "ollama":
@@ -8531,7 +8512,7 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     except urllib.error.HTTPError as fallback_err:
                         raise fallback_err from gemini_err
                     raise gemini_err
-            elif provider in ("openai", "groq", "deepseek", "mistral", "openrouter", "together", "together_ai", "nvidia", "nvidia_nim"):
+            elif provider in ("openai", "groq", "deepseek", "mistral", "openrouter", "together", "together_ai", "nvidia", "nvidia_nim", "nebius"):
                 if not model_id:
                     return self.verify_api_key(provider, key)
                 base = "https://api.openai.com/v1"
@@ -8550,6 +8531,8 @@ class VoiceFlowApiHandler(SimpleHTTPRequestHandler):
                     base = "https://api.together.xyz/v1"
                 elif provider in ("nvidia", "nvidia_nim"):
                     base = "https://integrate.api.nvidia.com/v1"
+                elif provider == "nebius":
+                    base = "https://api.tokenfactory.nebius.com/v1"
 
                 target_model = model_id.strip()
                 if provider == "openrouter":

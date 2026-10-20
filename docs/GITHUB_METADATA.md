@@ -6,7 +6,7 @@ Canonical GitHub repository metadata for **AI Productivity Flow**.
 Turn documents into video, text into audio, and voice into polished text — directly from your desktop, without switching apps.
 
 ## Homepage
-https://aiproductivityflow.site/
+https://ai-productivity-flow.vercel.app/
 
 ## Topics
 ai-productivity · desktop-app · windows · macos · voice-dictation · speech-to-text · text-to-speech · tts · visual-explainer · video-generation · nvidia-nemotron · notebooklm · byok · local-first · open-source · multimodal · productivity · accessibility · python
@@ -26,7 +26,7 @@ ai-productivity · desktop-app · windows · macos · voice-dictation · speech-
 ```bash
 gh repo edit uzerkayat2004-gif/AI-Productivity-Flow \
   --description "Turn documents into video, text into audio, and voice into polished text — directly from your desktop, without switching apps." \
-  --homepage "https://aiproductivityflow.site/" \
+  --homepage "https://ai-productivity-flow.vercel.app/" \
   --add-topic ai-productivity --add-topic desktop-app --add-topic windows --add-topic macos \
   --add-topic voice-dictation --add-topic speech-to-text --add-topic text-to-speech --add-topic tts \
   --add-topic visual-explainer --add-topic video-generation --add-topic nvidia-nemotron \
